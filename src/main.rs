@@ -1,3 +1,5 @@
+#![feature(array_map)]
+
 use std::path::{Path, PathBuf};
 
 mod error;

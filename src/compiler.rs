@@ -133,9 +133,12 @@ impl Compiler {
         }
     }
 
-    // TODO(ed): Const generics
-    fn peek_four(&self) -> (Token, Token, Token, Token) {
-        (self.peek_at(0), self.peek_at(1), self.peek_at(2), self.peek_at(3))
+    fn peek_to<const N: usize>(&self) -> [Token; N] {
+        let mut ret = [(); N].map(|_| Token::EOF);
+        for (i, t) in ret.iter_mut().enumerate() {
+            *t = self.peek_at(i);
+        }
+        ret
     }
 
     fn eat(&mut self) -> Token {
@@ -314,15 +317,17 @@ impl Compiler {
     fn statement(&mut self, block: &mut Block) {
         self.clear_panic();
 
-        match self.peek_four() {
-            (Token::Print, _, _, _) => {
+        let tokens = self.peek_to();
+        println!("{:?}", tokens);
+        match tokens {
+            [Token::Print, _, _, _] => {
                 self.eat();
                 self.expression(block);
                 block.add(Op::Print, self.line());
                 expect!(self, Token::Newline, "Expect newline after expression.");
             },
 
-            (Token::Identifier(name), Token::Identifier(typ), Token::ColonEqual, _) => {
+            [Token::Identifier(name), Token::Identifier(typ), Token::ColonEqual, _] => {
                 self.eat();
                 self.eat();
                 self.eat();
@@ -334,7 +339,7 @@ impl Compiler {
                 expect!(self, Token::Newline, "Expect newline after expression.");
             }
 
-            (Token::Identifier(name), Token::ColonEqual, _, _) => {
+            [Token::Identifier(name), Token::ColonEqual, _, _] => {
                 self.eat();
                 self.eat();
                 self.define_variable(&name, Type::UnkownType, block);
