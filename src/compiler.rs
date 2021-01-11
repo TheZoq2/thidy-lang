@@ -314,6 +314,22 @@ impl Compiler {
         // block.add(Op::Assign(self.stack.len() - 1), self.line());
     }
 
+    fn declaration(&mut self, name: &str, typ_str: Option<&str>, block: &mut Block) {
+        self.eat();
+        self.eat();
+        let typ = if let Some(typ) = typ_str {
+            self.eat();
+            Type::try_from(typ.as_ref())
+        } else {
+            Ok(Type::UnkownType)
+        };
+        if typ.is_err() {
+            error!(self, format!("Failed to parse type '{}'.", typ_str.unwrap()));
+        } else {
+            self.define_variable(&name, typ.unwrap(), block);
+        }
+    }
+
     fn statement(&mut self, block: &mut Block) {
         self.clear_panic();
 
@@ -321,26 +337,10 @@ impl Compiler {
             self.eat();
             self.expression(block);
             block.add(Op::Print, self.line());
-        } else if let [
-            Token::Identifier(name),
-            Token::Identifier(typ),
-            Token::ColonEqual
-        ] = self.peek_to() {
-            self.eat();
-            self.eat();
-            self.eat();
-            if let Ok(typ) = Type::try_from(typ.as_ref()) {
-                self.define_variable(&name, typ, block);
-            } else {
-                error!(self, format!("Failed to parse type '{}'.", typ));
-            }
-        } else if let [
-            Token::Identifier(name),
-            Token::ColonEqual
-        ] = self.peek_to() {
-            self.eat();
-            self.eat();
-            self.define_variable(&name, Type::UnkownType, block);
+        } else if let [Token::Identifier(name), Token::Identifier(typ), Token::ColonEqual] = self.peek_to() {
+            self.declaration(&name, Some(&typ), block);
+        } else if let [Token::Identifier(name), Token::ColonEqual] = self.peek_to() {
+            self.declaration(&name, None, block);
         } else {
             self.expression(block);
             block.add(Op::Pop, self.line());
