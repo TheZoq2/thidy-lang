@@ -317,40 +317,37 @@ impl Compiler {
     fn statement(&mut self, block: &mut Block) {
         self.clear_panic();
 
-        let tokens = self.peek_to();
-        println!("{:?}", tokens);
-        match tokens {
-            [Token::Print, _, _, _] => {
-                self.eat();
-                self.expression(block);
-                block.add(Op::Print, self.line());
-                expect!(self, Token::Newline, "Expect newline after expression.");
-            },
-
-            [Token::Identifier(name), Token::Identifier(typ), Token::ColonEqual, _] => {
-                self.eat();
-                self.eat();
-                self.eat();
-                if let Ok(typ) = Type::try_from(typ.as_ref()) {
-                    self.define_variable(&name, typ, block);
-                } else {
-                    error!(self, format!("Failed to parse type '{}'.", typ));
-                }
-                expect!(self, Token::Newline, "Expect newline after expression.");
+        if let [Token::Print] = self.peek_to() {
+            self.eat();
+            self.expression(block);
+            block.add(Op::Print, self.line());
+            expect!(self, Token::Newline, "Expect newline after expression.");
+        } else if let [
+            Token::Identifier(name),
+            Token::Identifier(typ),
+            Token::ColonEqual
+        ] = self.peek_to() {
+            self.eat();
+            self.eat();
+            self.eat();
+            if let Ok(typ) = Type::try_from(typ.as_ref()) {
+                self.define_variable(&name, typ, block);
+            } else {
+                error!(self, format!("Failed to parse type '{}'.", typ));
             }
-
-            [Token::Identifier(name), Token::ColonEqual, _, _] => {
-                self.eat();
-                self.eat();
-                self.define_variable(&name, Type::UnkownType, block);
-                expect!(self, Token::Newline, "Expect newline after expression.");
-            }
-
-            _ => {
-                self.expression(block);
-                block.add(Op::Pop, self.line());
-                expect!(self, Token::Newline, "Expect newline after expression.");
-            }
+            expect!(self, Token::Newline, "Expect newline after expression.");
+        } else if let [
+            Token::Identifier(name),
+            Token::ColonEqual
+        ] = self.peek_to() {
+            self.eat();
+            self.eat();
+            self.define_variable(&name, Type::UnkownType, block);
+            expect!(self, Token::Newline, "Expect newline after expression.");
+        } else {
+            self.expression(block);
+            block.add(Op::Pop, self.line());
+            expect!(self, Token::Newline, "Expect newline after expression.");
         }
     }
 
