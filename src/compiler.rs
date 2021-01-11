@@ -321,7 +321,6 @@ impl Compiler {
             self.eat();
             self.expression(block);
             block.add(Op::Print, self.line());
-            expect!(self, Token::Newline, "Expect newline after expression.");
         } else if let [
             Token::Identifier(name),
             Token::Identifier(typ),
@@ -335,7 +334,6 @@ impl Compiler {
             } else {
                 error!(self, format!("Failed to parse type '{}'.", typ));
             }
-            expect!(self, Token::Newline, "Expect newline after expression.");
         } else if let [
             Token::Identifier(name),
             Token::ColonEqual
@@ -343,12 +341,11 @@ impl Compiler {
             self.eat();
             self.eat();
             self.define_variable(&name, Type::UnkownType, block);
-            expect!(self, Token::Newline, "Expect newline after expression.");
         } else {
             self.expression(block);
             block.add(Op::Pop, self.line());
-            expect!(self, Token::Newline, "Expect newline after expression.");
         }
+        expect!(self, Token::Newline, "Expect newline after expression.");
     }
 
     pub fn compile(&mut self, name: &str, file: &Path) -> Result<Block, Vec<Error>> {
